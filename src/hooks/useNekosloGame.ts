@@ -102,6 +102,7 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
   // ── 内部抽選結果の一時保持 ──
   const currentRoleRef = useRef<WinningRole | null>(null);
   const stopTimingsRef = useRef<(number | null)[]>([null, null, null]);
+  const individualStopResultsRef = useRef<{ isMiss: boolean; actualPosition: number }[]>([]);
 
   // ── syncState: モジュール状態をReact状態に同期 ──
   const syncState = useCallback(() => {
@@ -163,6 +164,7 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
 
     // リール回転開始（spinはまだ呼ばない。ストップ時に目押しタイミングで呼ぶ）
     stopTimingsRef.current = [null, null, null];
+    individualStopResultsRef.current = [];
     setReelSpinning([true, true, true]);
     setSpinResult(null);
     setNotificationPayload(null);
@@ -190,6 +192,10 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
 
     // ReelControllerで引き込み・蹴飛ばしを適用して停止位置を決定
     const stopResult = reelController.determineStopPosition(reelIndex, role, stopTiming);
+    individualStopResultsRef.current[reelIndex] = {
+      isMiss: stopResult.isMiss,
+      actualPosition: stopResult.actualPosition,
+    };
 
     // リール回転状態を更新
     setReelSpinning(prev => {
@@ -217,6 +223,11 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     const result = spinEngine.spin(role, timings, {
       activePaylineIndices: activePaylines,
     }) as SpinResult<NekosloSymbol>;
+
+    // SpinEngine.spinは内部でcontrolReelsを再実行するため、isMissが不整合になる
+    // 個別に決定したstopResultのisMissを使用する
+    const actualIsMiss = individualStopResultsRef.current.some(sr => sr.isMiss);
+    result.isMiss = actualIsMiss;
 
     // ペトリ皿の中段停止時1枚配当の特殊ロジック
     const petriAdj = adjustPetriPayout(result);
