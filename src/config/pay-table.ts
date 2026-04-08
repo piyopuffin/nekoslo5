@@ -42,8 +42,8 @@ export const PAY_TABLE: PayTable<PayTableSymbol> = {
     // BT中BAR揃い（配当はモード判定で付与するためPayTable上は0）
     { pattern: ['bar', 'bar', 'bar'],           payout: 0, roleType: 'SMALL_WIN' },
     // 小役
-    { pattern: ['cat5', 'cat5', 'cat5'],        payout: 8,  roleType: 'SMALL_WIN' },
-    { pattern: ['falafel', 'falafel', 'falafel'], payout: 6, roleType: 'SMALL_WIN' },
+    { pattern: ['cat5', 'cat5', 'cat5'],        payout: 10,  roleType: 'SMALL_WIN' },
+    { pattern: ['falafel', 'falafel', 'falafel'], payout: 7, roleType: 'SMALL_WIN' },
     { pattern: ['ANY', 'ANY', 'petri'],         payout: 2,   roleType: 'SMALL_WIN' },
     // リプレイ
     { pattern: ['replay', 'replay', 'replay'],  payout: 0,   roleType: 'REPLAY' },

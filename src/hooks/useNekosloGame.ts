@@ -38,6 +38,8 @@ export interface UseNekosloGameReturn {
   normalSpinCount: number;
   totalGameCount: number;
   bonusAccumulatedPayout: number;
+  bonusRemainingSpins: number | null;
+  bonusMaxSpins: number | null;
   totalInvested: number;
   notificationPayload: NotificationPayload | null;
   // アクション
@@ -92,6 +94,8 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
   const [normalSpinCount, setNormalSpinCount] = useState(0);
   const [totalGameCount, setTotalGameCount] = useState(0);
   const [bonusAccumulatedPayout, setBonusAccumulatedPayout] = useState(0);
+  const [bonusRemainingSpins, setBonusRemainingSpins] = useState<number | null>(null);
+  const [bonusMaxSpins, setBonusMaxSpins] = useState<number | null>(null);
   const [totalInvested, setTotalInvested] = useState(100);
   const [notificationPayload, setNotificationPayload] = useState<NotificationPayload | null>(null);
 
@@ -109,6 +113,23 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     setBonusType(modules.gameModeManager.currentBonusType);
     setNormalSpinCount(modules.spinCounter.get('normalSpins'));
     setBonusAccumulatedPayout(modules.gameModeManager.getAccumulatedPayout());
+    setBonusRemainingSpins(modules.gameModeManager.getRemainingSpins());
+    // maxSpinsはモード遷移時に設定される
+    const currentBonusType = modules.gameModeManager.currentBonusType;
+    if (currentBonusType && modules.gameModeManager.currentMode === 'Bonus') {
+      const bonusConfigs: Record<string, number> = {
+        SUPER_BIG_BONUS: 100,
+        BIG_BONUS: 60,
+        REG_BONUS: 30,
+      };
+      setBonusMaxSpins(bonusConfigs[currentBonusType] ?? null);
+    } else if (modules.gameModeManager.currentMode === 'Chance') {
+      setBonusMaxSpins(10);
+    } else if (modules.gameModeManager.currentMode === 'BT') {
+      setBonusMaxSpins(100);
+    } else {
+      setBonusMaxSpins(null);
+    }
     setGamePhase(modules.gameCycleManager.currentPhase);
     setIsReplay(modules.gameCycleManager.isReplay);
   }, [modules]);
@@ -316,6 +337,8 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     normalSpinCount,
     totalGameCount,
     bonusAccumulatedPayout,
+    bonusRemainingSpins,
+    bonusMaxSpins,
     totalInvested,
     notificationPayload,
     handleLeverOn,
@@ -373,14 +396,17 @@ function buildProbabilities(
     miss: 0.35,
   };
 
-  // BTモード: BAR揃い確率を上げる
+  // BTモード: BAR揃い + SUPER BIG当選
+  // SUPER BIG確率: 設定1=20%, 設定6=35%（段階的に上昇）
+  const btSuperBigRate = [0, 0.20, 0.23, 0.25, 0.28, 0.32, 0.35][level] ?? 0.25;
   const btProbs: Record<string, number> = {
-    bar_hit: normalProbs.bar_hit ?? 0.01,
-    cat5: 0.15,
-    falafel: 0.10,
-    petri: 0.08,
-    replay: normalProbs.replay ?? 0.15,
-    miss: 0.0, // 残りをmissに
+    super_big_bonus: btSuperBigRate,
+    bar_hit: 0.05,
+    cat5: 0.10,
+    falafel: 0.08,
+    petri: 0.06,
+    replay: 0.10,
+    miss: 0.0,
   };
   // missを残りで埋める
   const btSum = Object.values(btProbs).reduce((a, b) => a + b, 0);

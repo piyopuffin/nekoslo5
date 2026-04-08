@@ -7,6 +7,7 @@ import { ControlPanel } from './ControlPanel';
 import { InfoPanel } from './InfoPanel';
 import { NotificationOverlay } from './NotificationOverlay';
 import { LoopAnimationRenderer } from './LoopAnimationRenderer';
+import { StageWindow } from './StageWindow';
 import styles from './GameScreen.module.css';
 
 export interface GameScreenProps {
@@ -79,8 +80,8 @@ export function GameScreen({ difficultyLevel }: GameScreenProps) {
 
   return (
     <div className={styles.screen}>
-      {/* ヘッダー: タイトル + サウンド/BGMトグル */}
-      <div className={styles.header}>
+      {/* ヘッダー: 筐体の外 */}
+      <header className={styles.header}>
         <h1 className={styles.title}>🐱 ねこスロ5</h1>
         <div className={styles.toggleRow}>
           <button
@@ -100,28 +101,39 @@ export function GameScreen({ difficultyLevel }: GameScreenProps) {
             🎵 BGM
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* 情報パネル */}
-      <div className={styles.gameBody}>
-        <InfoPanel
-          balance={game.creditState.balance}
-          currentBet={game.creditState.currentBet}
-          lastPayout={lastPayout}
-          lastRoleName={lastRoleName}
+      {/* 情報欄: 筐体の外 */}
+      <InfoPanel
+        balance={game.creditState.balance}
+        currentBet={game.creditState.currentBet}
+        lastPayout={lastPayout}
+        lastRoleName={lastRoleName}
+        gameMode={game.gameMode}
+        bonusType={game.bonusType}
+        bonusAccumulatedPayout={game.bonusAccumulatedPayout}
+        normalSpinCount={game.normalSpinCount}
+        totalGameCount={game.totalGameCount}
+        totalInvested={game.totalInvested}
+        isReplay={game.isReplay}
+        onAddCredit={game.addCredit}
+      />
+
+      {/* 筐体 */}
+      <div className={styles.cabinet}>
+        <LoopAnimationRenderer gameMode={game.gameMode} />
+
+        {/* 演出ウィンドウ */}
+        <StageWindow
           gameMode={game.gameMode}
           bonusType={game.bonusType}
           bonusAccumulatedPayout={game.bonusAccumulatedPayout}
-          normalSpinCount={game.normalSpinCount}
-          totalGameCount={game.totalGameCount}
-          totalInvested={game.totalInvested}
-          isReplay={game.isReplay}
-          onAddCredit={game.addCredit}
+          bonusRemainingSpins={game.bonusRemainingSpins}
+          bonusMaxSpins={game.bonusMaxSpins}
         />
 
-        {/* リール表示エリア（ループアニメーション + 告知オーバーレイ付き） */}
+        {/* リール表示エリア */}
         <div className={styles.reelArea}>
-          <LoopAnimationRenderer gameMode={game.gameMode} />
           <ReelDisplay
             reelSpinning={game.reelSpinning}
             reelStopPositions={game.reelStopPositions}

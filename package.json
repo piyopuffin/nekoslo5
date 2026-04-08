@@ -12,6 +12,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@tsparticles/react": "^3.0.0",
+    "@tsparticles/slim": "^3.9.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "reeljs": "file:../Reeljs"

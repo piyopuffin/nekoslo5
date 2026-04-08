@@ -1,0 +1,70 @@
+.window {
+  width: 100%;
+  height: 80px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  transition: background 0.5s;
+}
+
+.content {
+  text-align: center;
+  z-index: 1;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.payout {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #ffd700;
+  margin-top: 2px;
+}
+
+.gameCount {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 2px;
+}
+
+.bgNormal {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+}
+
+.bgChance {
+  background: linear-gradient(135deg, #ff6f00, #ff8f00);
+  animation: chancePulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes chancePulse {
+  from { box-shadow: inset 0 0 20px rgba(255, 200, 0, 0.3); }
+  to { box-shadow: inset 0 0 40px rgba(255, 200, 0, 0.6); }
+}
+
+.bgBonus {
+  background: linear-gradient(135deg, #b71c1c, #e53935);
+  animation: bonusGlow 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes bonusGlow {
+  from { box-shadow: inset 0 0 20px rgba(255, 50, 50, 0.3); }
+  to { box-shadow: inset 0 0 40px rgba(255, 50, 50, 0.7); }
+}
+
+.bgBT {
+  background: linear-gradient(135deg, #6a1b9a, #ab47bc);
+  animation: btShimmer 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes btShimmer {
+  from { box-shadow: inset 0 0 20px rgba(200, 100, 255, 0.3); }
+  to { box-shadow: inset 0 0 40px rgba(200, 100, 255, 0.6); }
+}
