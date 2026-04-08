@@ -90,6 +90,7 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
   const [normalSpinCount, setNormalSpinCount] = useState(0);
   const [totalGameCount, setTotalGameCount] = useState(0);
   const [bonusAccumulatedPayout, setBonusAccumulatedPayout] = useState(0);
+  const [totalInvested, setTotalInvested] = useState(100);
   const [notificationPayload, setNotificationPayload] = useState<NotificationPayload | null>(null);
 
   // ── 内部抽選結果の一時保持 ──
@@ -198,6 +199,11 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     const petriAdj = adjustPetriPayout(result);
     if (petriAdj !== 0) {
       result.totalPayout = Math.max(0, result.totalPayout + petriAdj);
+    }
+
+    // BTモード中のBAR揃いは200枚加算
+    if (gameModeManager.currentMode === 'BT' && role.id === 'bar_hit' && !result.isMiss) {
+      result.totalPayout += 200;
     }
 
     setSpinResult(result);
