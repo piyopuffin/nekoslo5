@@ -5,6 +5,26 @@ import { PAY_TABLE, PAYLINES, PAYLINES_PER_BET } from './pay-table';
 import { WINNING_ROLE_DEFINITIONS } from './winning-roles';
 import { DIFFICULTY_PRESETS } from './difficulty-presets';
 
+/** ボーナス種別ごとの最大スピン数 */
+export const BONUS_MAX_SPINS: Record<string, number> = {
+  SUPER_BIG_BONUS: 100,
+  BIG_BONUS: 60,
+  REG_BONUS: 30,
+};
+
+/** ボーナス種別ごとの最大獲得枚数 */
+export const BONUS_MAX_PAYOUT: Record<string, number> = {
+  SUPER_BIG_BONUS: 400,
+  BIG_BONUS: 220,
+  REG_BONUS: 96,
+};
+
+/** チャンスモードの最大スピン数 */
+export const CHANCE_MAX_SPINS = 10;
+
+/** BTモードの最大スピン数 */
+export const BT_MAX_SPINS = 100;
+
 /**
  * ねこスロ5のゲーム全体設定を構築する。
  *
@@ -32,25 +52,25 @@ export function createNekosloConfig(
       SUPER_BIG_BONUS: {
         type: 'SUPER_BIG_BONUS',
         payoutMultiplier: 1,
-        maxSpins: 100,
-        maxPayout: 400,
+        maxSpins: BONUS_MAX_SPINS.SUPER_BIG_BONUS,
+        maxPayout: BONUS_MAX_PAYOUT.SUPER_BIG_BONUS,
       },
       BIG_BONUS: {
         type: 'BIG_BONUS',
         payoutMultiplier: 1,
-        maxSpins: 60,
-        maxPayout: 220,
+        maxSpins: BONUS_MAX_SPINS.BIG_BONUS,
+        maxPayout: BONUS_MAX_PAYOUT.BIG_BONUS,
       },
       REG_BONUS: {
         type: 'REG_BONUS',
         payoutMultiplier: 1,
-        maxSpins: 30,
-        maxPayout: 96,
+        maxSpins: BONUS_MAX_SPINS.REG_BONUS,
+        maxPayout: BONUS_MAX_PAYOUT.REG_BONUS,
       },
     },
 
     btConfig: {
-      maxSpins: 100,
+      maxSpins: BT_MAX_SPINS,
       maxPayout: 200,
       winPatterns: [
         { symbols: ['red7', 'red7', 'red7'] },
@@ -59,7 +79,7 @@ export function createNekosloConfig(
     },
 
     chanceConfig: {
-      maxSpins: 10,
+      maxSpins: CHANCE_MAX_SPINS,
       maxPayout: 90,
       winPatterns: [
         { symbols: ['red7', 'red7', 'blue7'] },

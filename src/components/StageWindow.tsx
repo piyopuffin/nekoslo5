@@ -1,4 +1,5 @@
 import type { GameMode, BonusType } from 'reeljs';
+import { BONUS_MAX_PAYOUT } from '../config/nekoslo-config';
 import styles from './StageWindow.module.css';
 
 export interface StageWindowProps {
@@ -22,12 +23,6 @@ const BONUS_LABEL: Record<string, string> = {
   SUPER_BIG_BONUS: 'SUPER BIG BONUS',
   BIG_BONUS: 'BIG BONUS',
   REG_BONUS: 'REG BONUS',
-};
-
-const BONUS_MAX_PAYOUT: Record<string, number> = {
-  SUPER_BIG_BONUS: 400,
-  BIG_BONUS: 220,
-  REG_BONUS: 96,
 };
 
 export function StageWindow({

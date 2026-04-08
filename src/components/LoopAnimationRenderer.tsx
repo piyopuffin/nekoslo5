@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState, useCallback } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import Particles, { initParticlesEngine } from '@tsparticles/react';
 import { loadSlim } from '@tsparticles/slim';
 import type { ISourceOptions, Container } from '@tsparticles/engine';
@@ -26,9 +26,7 @@ const MODE_CONFIGS: Record<GameMode, ISourceOptions> = {
       move: { enable: true, speed: 2, direction: 'none' as const, outModes: 'bounce' as const },
       shape: {
         type: 'emoji',
-        options: {
-          emoji: { value: '🐧' },
-        },
+        options: { emoji: { value: '🐧' } },
       },
     },
     background: { color: 'transparent' },
@@ -64,7 +62,7 @@ export interface LoopAnimationRendererProps {
 
 function LoopAnimationRendererInner({ gameMode }: LoopAnimationRendererProps) {
   const [ready, setReady] = useState(false);
-  const containerRef = useMemo<{ current: Container | null }>(() => ({ current: null }), []);
+  const containerRef = useRef<Container | null>(null);
 
   useEffect(() => {
     initParticlesEngine(async (engine) => {
@@ -72,7 +70,6 @@ function LoopAnimationRendererInner({ gameMode }: LoopAnimationRendererProps) {
     }).then(() => setReady(true));
   }, []);
 
-  // モード変更時にパーティクル設定を更新（再マウントせず）
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -80,15 +77,9 @@ function LoopAnimationRendererInner({ gameMode }: LoopAnimationRendererProps) {
     void container.loadTheme('default');
     container.options.load(opts);
     void container.refresh();
-  }, [gameMode, containerRef]);
+  }, [gameMode]);
 
   const options = useMemo(() => MODE_CONFIGS[gameMode] ?? MODE_CONFIGS.Normal, [gameMode]);
-
-  const particlesLoaded = useCallback(async (container?: Container) => {
-    if (container) {
-      containerRef.current = container;
-    }
-  }, [containerRef]);
 
   if (!ready) return null;
 
@@ -97,7 +88,11 @@ function LoopAnimationRendererInner({ gameMode }: LoopAnimationRendererProps) {
       <Particles
         id="nekoslo-particles"
         options={options}
-        particlesLoaded={particlesLoaded}
+        particlesLoaded={async (container) => {
+          if (container) {
+            containerRef.current = container;
+          }
+        }}
       />
     </div>
   );

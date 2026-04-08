@@ -22,7 +22,8 @@ import type {
 } from 'reeljs';
 import type { NekosloSymbol } from '../config/symbol-definitions';
 import { createNekosloConfig } from '../config/nekoslo-config';
-import { PAYLINES_PER_BET } from '../config/pay-table';
+import { BONUS_MAX_SPINS, CHANCE_MAX_SPINS, BT_MAX_SPINS } from '../config/nekoslo-config';
+import { PAY_TABLE, PAYLINES, PAYLINES_PER_BET } from '../config/pay-table';
 import { DIFFICULTY_PRESETS } from '../config/difficulty-presets';
 
 export interface UseNekosloGameReturn {
@@ -48,23 +49,6 @@ export interface UseNekosloGameReturn {
   setBet: (amount: number) => void;
   setDifficulty: (level: number) => void;
   addCredit: () => void;
-}
-
-/**
- * ペトリ皿の中段停止時1枚配当の特殊ロジック。
- * 中段ライン（positions: [1,1,1]）でペトリ皿が成立した場合、配当を2→1に減額する。
- */
-function adjustPetriPayout(result: SpinResult<NekosloSymbol>): number {
-  let adjustment = 0;
-  for (const winLine of result.winLines) {
-    if (winLine.matchedSymbols[2] === 'petri') {
-      // 中段ライン: positions が全て1
-      if (winLine.payline.positions.every((p: number) => p === 1)) {
-        adjustment -= 1; // 2枚 → 1枚
-      }
-    }
-  }
-  return adjustment;
 }
 
 /**
@@ -118,16 +102,11 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     // maxSpinsはモード遷移時に設定される
     const currentBonusType = modules.gameModeManager.currentBonusType;
     if (currentBonusType && modules.gameModeManager.currentMode === 'Bonus') {
-      const bonusConfigs: Record<string, number> = {
-        SUPER_BIG_BONUS: 100,
-        BIG_BONUS: 60,
-        REG_BONUS: 30,
-      };
-      setBonusMaxSpins(bonusConfigs[currentBonusType] ?? null);
+      setBonusMaxSpins(BONUS_MAX_SPINS[currentBonusType] ?? null);
     } else if (modules.gameModeManager.currentMode === 'Chance') {
-      setBonusMaxSpins(10);
+      setBonusMaxSpins(CHANCE_MAX_SPINS);
     } else if (modules.gameModeManager.currentMode === 'BT') {
-      setBonusMaxSpins(100);
+      setBonusMaxSpins(BT_MAX_SPINS);
     } else {
       setBonusMaxSpins(null);
     }
@@ -215,25 +194,81 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     const allStopped = stopTimingsRef.current.every(t => t !== null);
     if (!allStopped) return;
 
-    // 全リール停止 → SpinEngine.spinで結果を生成
-    // stopTimingsを渡すことで、SpinEngine内部のReelControllerが引き込み・蹴飛ばしを適用
+    // 全リール停止 → 個別に決定した停止位置からgridとSpinResultを構築
+    // SpinEngine.spinは内部でcontrolReelsを再実行してしまうため、
+    // 個別停止結果と不整合が起きる。Payline評価のみSpinEngineに委譲する。
     const timings = stopTimingsRef.current as number[];
     const activePaylines = PAYLINES_PER_BET[creditManager.currentBet] ?? [0, 1, 2, 3, 4];
 
-    const result = spinEngine.spin(role, timings, {
+    // 個別停止位置からgridを構築
+    const reelStrips = [0, 1, 2].map(i => reelController.getReelStrip(i));
+    const grid: NekosloSymbol[][] = [];
+    for (let row = 0; row < 3; row++) {
+      const gridRow: NekosloSymbol[] = [];
+      for (let col = 0; col < 3; col++) {
+        const pos = individualStopResultsRef.current[col].actualPosition;
+        const strip = reelStrips[col];
+        gridRow.push(strip[(pos + row) % strip.length]);
+      }
+      grid.push(gridRow);
+    }
+
+    // SpinEngine.spinでPayline評価を取得（gridは使わないがtotalPayoutとwinLinesが必要）
+    const spinResult = spinEngine.spin(role, timings, {
       activePaylineIndices: activePaylines,
     }) as SpinResult<NekosloSymbol>;
 
-    // SpinEngine.spinは内部でcontrolReelsを再実行するため、isMissが不整合になる
-    // 個別に決定したstopResultのisMissを使用する
+    // 個別停止結果で上書き
     const actualIsMiss = individualStopResultsRef.current.some(sr => sr.isMiss);
-    result.isMiss = actualIsMiss;
+    const result: SpinResult<NekosloSymbol> = {
+      ...spinResult,
+      grid,
+      isMiss: actualIsMiss,
+      stopResults: individualStopResultsRef.current.map((sr, i) => ({
+        reelIndex: i,
+        targetPosition: timings[i],
+        actualPosition: sr.actualPosition,
+        slipCount: 0,
+        isMiss: sr.isMiss,
+      })),
+    };
 
-    // ペトリ皿の中段停止時1枚配当の特殊ロジック
-    const petriAdj = adjustPetriPayout(result);
-    if (petriAdj !== 0) {
-      result.totalPayout = Math.max(0, result.totalPayout + petriAdj);
+    // 個別gridでPayline評価をやり直す（SpinEngineのgridと異なる可能性があるため）
+    // PAY_TABLEとPAYLINESをインポートして使用
+    result.winLines = [];
+    result.totalPayout = 0;
+    for (const pl of PAYLINES) {
+      if (!activePaylines.includes(pl.index)) continue;
+      const symbols = pl.positions.map((row, col) => grid[row]?.[col] ?? '');
+      // ペトリ皿チェック（ANY ANY petri）
+      if (symbols[2] === 'petri') {
+        const payout = pl.positions.every(p => p === 1) ? 1 : 2;
+        result.winLines.push({
+          lineIndex: pl.index,
+          matchedSymbols: symbols as NekosloSymbol[],
+          payout,
+          payline: pl,
+        });
+        result.totalPayout += payout;
+        continue;
+      }
+      for (const entry of PAY_TABLE.entries) {
+        const matched = entry.pattern.every((s, i) => s === symbols[i] || s === 'ANY');
+        if (matched) {
+          result.winLines.push({
+            lineIndex: pl.index,
+            matchedSymbols: symbols as NekosloSymbol[],
+            payout: entry.payout,
+            payline: pl,
+          });
+          result.totalPayout += entry.payout;
+          break;
+        }
+      }
     }
+    result.isReplay = result.winLines.some(wl => 
+      wl.matchedSymbols.every(s => s === 'replay')
+    );
 
     // BTモード中のBAR揃いは200枚加算
     if (gameModeManager.currentMode === 'BT' && role.id === 'bar_hit' && !result.isMiss) {

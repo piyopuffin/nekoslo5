@@ -1,12 +1,6 @@
 import type { GameMode, BonusType } from 'reeljs';
+import { BONUS_MAX_PAYOUT } from '../config/nekoslo-config';
 import styles from './InfoPanel.module.css';
-
-/** ボーナス種別ごとの最大獲得枚数 */
-const BONUS_MAX_PAYOUT: Record<string, number> = {
-  SUPER_BIG_BONUS: 400,
-  BIG_BONUS: 220,
-  REG_BONUS: 96,
-};
 
 /** ゲームモードの表示名 */
 const MODE_DISPLAY: Record<GameMode, string> = {

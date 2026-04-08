@@ -1,7 +1,7 @@
 import { Reel } from 'reeljs';
 import type { NekosloSymbol } from '../config/symbol-definitions';
 import { REEL_STRIPS } from '../config/reel-strips';
-import { renderNekosloSymbol } from './SymbolRenderer';
+import { renderNekosloSymbol } from './renderNekosloSymbol';
 import styles from './ReelDisplay.module.css';
 
 const SYMBOL_HEIGHT = 64;
