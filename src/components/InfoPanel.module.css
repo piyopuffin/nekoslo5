@@ -1,0 +1,63 @@
+.panel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 4px;
+}
+
+.label {
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.value {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #ffd700;
+}
+
+.modeNormal { color: #4caf50; }
+.modeChance { color: #ff9800; }
+.modeBonus { color: #f44336; }
+.modeBT { color: #e040fb; }
+
+.bonusInfo {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4px;
+  font-size: 0.85rem;
+  color: #ff9800;
+  background: rgba(255, 152, 0, 0.1);
+  border-radius: 4px;
+}
+
+.spinCounter {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4px;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.warning {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4px;
+  font-size: 0.85rem;
+  color: #f44336;
+  background: rgba(244, 67, 54, 0.15);
+  border-radius: 4px;
+  font-weight: bold;
+}

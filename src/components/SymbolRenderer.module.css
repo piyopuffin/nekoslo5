@@ -1,0 +1,17 @@
+.symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  user-select: none;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}
+
+.symbolImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}

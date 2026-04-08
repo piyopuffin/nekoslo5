@@ -1,0 +1,64 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.preSpin {
+  animation: preSpinFlash 0.8s ease-out forwards;
+}
+
+.postSpin {
+  animation: postSpinSlide 1s ease-out forwards;
+}
+
+.content {
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 1.4rem;
+  font-weight: bold;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+  background: rgba(0, 0, 0, 0.75);
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+}
+
+@keyframes preSpinFlash {
+  0% {
+    opacity: 0;
+    transform: scale(2);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes postSpinSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
