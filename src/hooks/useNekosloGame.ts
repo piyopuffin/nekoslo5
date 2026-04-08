@@ -38,12 +38,14 @@ export interface UseNekosloGameReturn {
   normalSpinCount: number;
   totalGameCount: number;
   bonusAccumulatedPayout: number;
+  totalInvested: number;
   notificationPayload: NotificationPayload | null;
   // アクション
   handleLeverOn: () => void;
   handleStop: (reelIndex: number) => void;
   setBet: (amount: number) => void;
   setDifficulty: (level: number) => void;
+  addCredit: () => void;
 }
 
 /**
@@ -271,6 +273,13 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     syncState();
   }, [modules, syncState]);
 
+  // ── addCredit ──
+  const addCredit = useCallback(() => {
+    modules.creditManager.payout(100);
+    setTotalInvested(prev => prev + 100);
+    syncState();
+  }, [modules, syncState]);
+
   // ── setDifficulty ──
   const setDifficultyAction = useCallback((level: number) => {
     const { difficultyPreset } = modules;
@@ -307,11 +316,13 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     normalSpinCount,
     totalGameCount,
     bonusAccumulatedPayout,
+    totalInvested,
     notificationPayload,
     handleLeverOn,
     handleStop,
     setBet: setBetAction,
     setDifficulty: setDifficultyAction,
+    addCredit,
   };
 }
 

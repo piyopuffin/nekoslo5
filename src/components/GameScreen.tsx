@@ -114,7 +114,9 @@ export function GameScreen({ difficultyLevel }: GameScreenProps) {
           bonusAccumulatedPayout={game.bonusAccumulatedPayout}
           normalSpinCount={game.normalSpinCount}
           totalGameCount={game.totalGameCount}
+          totalInvested={game.totalInvested}
           isReplay={game.isReplay}
+          onAddCredit={game.addCredit}
         />
 
         {/* リール表示エリア（ループアニメーション + 告知オーバーレイ付き） */}

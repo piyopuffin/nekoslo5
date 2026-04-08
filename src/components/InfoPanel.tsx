@@ -25,32 +25,20 @@ const MODE_CLASS: Record<GameMode, string> = {
 };
 
 export interface InfoPanelProps {
-  /** クレジット残高 */
   balance: number;
-  /** 現在のBET額 */
   currentBet: number;
-  /** 最新の配当額 */
   lastPayout: number;
-  /** ヒットした役名 */
   lastRoleName: string | null;
-  /** 現在のゲームモード */
   gameMode: GameMode;
-  /** ボーナス種別 */
   bonusType: BonusType | null;
-  /** ボーナス中の累計獲得枚数 */
   bonusAccumulatedPayout: number;
-  /** 通常モードのスピンカウンター */
   normalSpinCount: number;
-  /** トータルゲーム数 */
   totalGameCount: number;
-  /** リプレイ中かどうか */
+  totalInvested: number;
   isReplay?: boolean;
+  onAddCredit: () => void;
 }
 
-/**
- * 情報パネルコンポーネント。
- * クレジット残高、BET額、配当額、ゲームモード、ボーナス情報、スピンカウンターを表示する。
- */
 export function InfoPanel({
   balance,
   currentBet,
@@ -61,7 +49,9 @@ export function InfoPanel({
   bonusAccumulatedPayout,
   normalSpinCount,
   totalGameCount,
+  totalInvested,
   isReplay = false,
+  onAddCredit,
 }: InfoPanelProps) {
   const maxPayout = bonusType ? (BONUS_MAX_PAYOUT[bonusType] ?? 0) : 0;
   const ceilingRemaining = 1000 - normalSpinCount;
@@ -74,13 +64,13 @@ export function InfoPanel({
         <span className={styles.value}>{balance}</span>
       </div>
       <div className={styles.item}>
-        <span className={styles.label}>BET</span>
-        <span className={styles.value}>{currentBet}</span>
-      </div>
-      <div className={styles.item}>
         <span className={styles.label}>WIN</span>
         <span className={styles.value}>{lastPayout}</span>
         <span className={styles.roleName}>{lastRoleName ?? '\u00A0'}</span>
+      </div>
+      <div className={styles.item}>
+        <span className={styles.label}>投資</span>
+        <span className={styles.value}>{totalInvested}</span>
       </div>
 
       <div className={styles.item}>
@@ -89,7 +79,6 @@ export function InfoPanel({
           {MODE_DISPLAY[gameMode]}
         </span>
       </div>
-
       <div className={styles.item}>
         <span className={styles.label}>GAME</span>
         <span className={styles.value}>{totalGameCount}</span>
@@ -110,6 +99,13 @@ export function InfoPanel({
       {isInsufficientCredit && (
         <div className={styles.warning}>
           クレジット不足
+          <button
+            type="button"
+            className={styles.addCreditButton}
+            onClick={onAddCredit}
+          >
+            +100枚追加
+          </button>
         </div>
       )}
     </div>

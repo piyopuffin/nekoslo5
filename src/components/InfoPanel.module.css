@@ -73,3 +73,20 @@
   height: 1em;
   line-height: 1em;
 }
+
+.addCreditButton {
+  margin-left: 8px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border: 1px solid #f44336;
+  border-radius: 12px;
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.addCreditButton:hover {
+  background: rgba(244, 67, 54, 0.4);
+}
