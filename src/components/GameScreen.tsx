@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNekosloGame } from '../hooks/useNekosloGame';
 import { useBGM } from '../hooks/useBGM';
 import { useSoundEffects } from '../hooks/useSoundEffects';
@@ -48,13 +48,39 @@ export function GameScreen({ difficultyLevel }: GameScreenProps) {
     prevSpinResultRef.current = game.spinResult;
   }, [game.spinResult, sound]);
 
-  // ボーナス成立時にbonusConfirm音を再生
+  // ボーナス成立時にbonusConfirm音を再生 + ボーナス終了時の獲得枚数表示
+  const [bonusEndPayout, setBonusEndPayout] = useState<number | null>(null);
   const prevGameModeRef = useRef(game.gameMode);
+  const prevBonusPayoutRef = useRef(game.bonusAccumulatedPayout);
+
+  // bonusAccumulatedPayoutの追跡（useEffect外で更新）
   useEffect(() => {
-    if (game.gameMode === 'Bonus' && prevGameModeRef.current !== 'Bonus') {
+    if (game.gameMode === 'Bonus' || game.gameMode === 'BT') {
+      prevBonusPayoutRef.current = game.bonusAccumulatedPayout;
+    }
+  }, [game.bonusAccumulatedPayout, game.gameMode]);
+
+  useEffect(() => {
+    const prev = prevGameModeRef.current;
+    const curr = game.gameMode;
+    prevGameModeRef.current = curr;
+
+    if (prev === curr) return;
+
+    // ボーナス成立時
+    if (curr === 'Bonus' && prev !== 'Bonus') {
       sound.playSound('bonusConfirm');
     }
-    prevGameModeRef.current = game.gameMode;
+
+    // ボーナス/BT終了時 → 獲得枚数オーバーレイ表示
+    if ((prev === 'Bonus' || prev === 'BT') && curr !== 'Bonus' && curr !== 'BT') {
+      const payout = prevBonusPayoutRef.current;
+      if (payout > 0) {
+        setBonusEndPayout(payout);
+        const timer = setTimeout(() => setBonusEndPayout(null), 5000);
+        return () => clearTimeout(timer);
+      }
+    }
   }, [game.gameMode, sound]);
   const lastRoleName = (() => {
     const sr = game.spinResult;
@@ -130,6 +156,7 @@ export function GameScreen({ difficultyLevel }: GameScreenProps) {
           bonusAccumulatedPayout={game.bonusAccumulatedPayout}
           bonusRemainingSpins={game.bonusRemainingSpins}
           bonusMaxSpins={game.bonusMaxSpins}
+          bonusEndPayout={bonusEndPayout}
         />
 
         {/* リール表示エリア */}

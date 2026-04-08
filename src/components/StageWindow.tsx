@@ -7,6 +7,8 @@ export interface StageWindowProps {
   bonusAccumulatedPayout: number;
   bonusRemainingSpins: number | null;
   bonusMaxSpins: number | null;
+  /** ボーナス終了時の獲得枚数オーバーレイ */
+  bonusEndPayout: number | null;
 }
 
 const MODE_BG: Record<GameMode, string> = {
@@ -34,6 +36,7 @@ export function StageWindow({
   bonusAccumulatedPayout,
   bonusRemainingSpins,
   bonusMaxSpins,
+  bonusEndPayout,
 }: StageWindowProps) {
   const bgClass = MODE_BG[gameMode] ?? styles.bgNormal;
   const consumed = bonusMaxSpins != null && bonusRemainingSpins != null
@@ -42,7 +45,7 @@ export function StageWindow({
 
   return (
     <div className={`${styles.window} ${bgClass}`}>
-      {gameMode === 'Normal' && (
+      {gameMode === 'Normal' && !bonusEndPayout && (
         <div className={styles.content}>🐱</div>
       )}
 
@@ -73,6 +76,13 @@ export function StageWindow({
           {consumed != null && bonusMaxSpins != null && (
             <div className={styles.gameCount}>{consumed} / {bonusMaxSpins} G</div>
           )}
+        </div>
+      )}
+
+      {bonusEndPayout != null && (
+        <div className={styles.overlay}>
+          <div className={styles.overlayTitle}>BONUS COMPLETE</div>
+          <div className={styles.overlayPayout}>{bonusEndPayout} 枚獲得</div>
         </div>
       )}
     </div>
