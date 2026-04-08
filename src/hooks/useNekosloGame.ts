@@ -273,9 +273,27 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
       spinCounter.increment('normalSpins');
     }
 
-    // 天井到達チェック
+    // 天井到達チェック → BT直接突入
     const normalCount = spinCounter.get('normalSpins');
-    if (thresholdTrigger.check('normalSpins', normalCount)) {
+    if (gameModeManager.currentMode === 'Normal' && thresholdTrigger.check('normalSpins', normalCount)) {
+      // 天井恩恵: BT確定。Chance経由で即BT突入
+      // Normal→Chanceに遷移
+      const chanceGrid = [['red7','red7','blue7'],['red7','red7','blue7'],['red7','red7','blue7']] as unknown as NekosloSymbol[][];
+      const chanceResult: SpinResult<NekosloSymbol> = {
+        grid: chanceGrid,
+        stopResults: result.stopResults,
+        winLines: [],
+        totalPayout: 0,
+        isReplay: false,
+        isMiss: false,
+        winningRole: { id: 'chance_mode', name: 'ﾍﾟﾆｭﾌﾟﾋﾟﾘｭﾘｭﾘｭﾐﾋﾟﾋﾟｭﾎﾟｨﾎﾟﾋﾟﾘｨ', type: 'BONUS', payout: 90, patterns: [], priority: 70 },
+      };
+      // Normal→Chance遷移（normalToChance確率を100%にするため直接evaluateTransition）
+      gameModeManager.evaluateTransition(chanceResult, chanceResult.winningRole);
+      // Chance→BT遷移（winPatternマッチで即BT突入）
+      gameModeManager.evaluateTransition(chanceResult, chanceResult.winningRole);
+      // 90枚付与
+      creditManager.payout(90);
       spinCounter.reset('normalSpins');
     }
 
