@@ -31,6 +31,8 @@ export interface InfoPanelProps {
   currentBet: number;
   /** 最新の配当額 */
   lastPayout: number;
+  /** ヒットした役名 */
+  lastRoleName: string | null;
   /** 現在のゲームモード */
   gameMode: GameMode;
   /** ボーナス種別 */
@@ -39,6 +41,8 @@ export interface InfoPanelProps {
   bonusAccumulatedPayout: number;
   /** 通常モードのスピンカウンター */
   normalSpinCount: number;
+  /** トータルゲーム数 */
+  totalGameCount: number;
   /** リプレイ中かどうか */
   isReplay?: boolean;
 }
@@ -51,10 +55,12 @@ export function InfoPanel({
   balance,
   currentBet,
   lastPayout,
+  lastRoleName,
   gameMode,
   bonusType,
   bonusAccumulatedPayout,
   normalSpinCount,
+  totalGameCount,
   isReplay = false,
 }: InfoPanelProps) {
   const maxPayout = bonusType ? (BONUS_MAX_PAYOUT[bonusType] ?? 0) : 0;
@@ -74,6 +80,7 @@ export function InfoPanel({
       <div className={styles.item}>
         <span className={styles.label}>WIN</span>
         <span className={styles.value}>{lastPayout}</span>
+        <span className={styles.roleName}>{lastRoleName ?? '\u00A0'}</span>
       </div>
 
       <div className={styles.item}>
@@ -81,6 +88,11 @@ export function InfoPanel({
         <span className={`${styles.value} ${MODE_CLASS[gameMode]}`}>
           {MODE_DISPLAY[gameMode]}
         </span>
+      </div>
+
+      <div className={styles.item}>
+        <span className={styles.label}>GAME</span>
+        <span className={styles.value}>{totalGameCount}</span>
       </div>
 
       {gameMode === 'Bonus' && bonusType && (

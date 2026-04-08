@@ -51,12 +51,15 @@ export function createNekosloConfig(
 
     btConfig: {
       maxSpins: 100,
-      maxPayout: 1000,
-      winPatterns: [{ symbols: ['bar', 'bar', 'bar'] }],
+      maxPayout: 200,
+      winPatterns: [
+        { symbols: ['red7', 'red7', 'red7'] },
+        { symbols: ['blue7', 'blue7', 'blue7'] },
+      ],
     },
 
     chanceConfig: {
-      maxSpins: 1,
+      maxSpins: 10,
       maxPayout: 90,
       winPatterns: [
         { symbols: ['red7', 'red7', 'blue7'] },

@@ -19,7 +19,6 @@ import type {
   SpinResult,
   NotificationPayload,
   WinningRole,
-  StopResult,
 } from 'reeljs';
 import type { NekosloSymbol } from '../config/symbol-definitions';
 import { createNekosloConfig } from '../config/nekoslo-config';
@@ -37,6 +36,7 @@ export interface UseNekosloGameReturn {
   reelStopPositions: number[];
   isReplay: boolean;
   normalSpinCount: number;
+  totalGameCount: number;
   bonusAccumulatedPayout: number;
   notificationPayload: NotificationPayload | null;
   // アクション
@@ -88,12 +88,13 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
   const [reelStopPositions, setReelStopPositions] = useState<number[]>([0, 0, 0]);
   const [isReplay, setIsReplay] = useState(false);
   const [normalSpinCount, setNormalSpinCount] = useState(0);
+  const [totalGameCount, setTotalGameCount] = useState(0);
   const [bonusAccumulatedPayout, setBonusAccumulatedPayout] = useState(0);
   const [notificationPayload, setNotificationPayload] = useState<NotificationPayload | null>(null);
 
   // ── 内部抽選結果の一時保持 ──
   const currentRoleRef = useRef<WinningRole | null>(null);
-  const stopResultsRef = useRef<(StopResult | null)[]>([null, null, null]);
+  const stopTimingsRef = useRef<(number | null)[]>([null, null, null]);
 
   // ── syncState: モジュール状態をReact状態に同期 ──
   const syncState = useCallback(() => {
@@ -112,19 +113,19 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
   // ── handleLeverOn ──
   const handleLeverOn = useCallback(() => {
     const {
-      gameCycleManager, internalLottery, creditManager,
+      internalLottery, creditManager,
       notificationManager, gameModeManager,
       difficultyPreset,
     } = modules;
 
     // リプレイ時はBETスキップ
-    if (!gameCycleManager.isReplay) {
-      // BET実行
+    if (!modules.gameCycleManager.isReplay) {
       const betOk = creditManager.bet();
-      if (!betOk) return; // クレジット不足
+      if (!betOk) return;
     }
 
     setGamePhase('LEVER_ON');
+    setTotalGameCount(prev => prev + 1);
 
     // 内部抽選
     const role = internalLottery.draw(
@@ -136,9 +137,9 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     // 告知チェック（PRE_SPIN）
     notificationManager.check('PRE_SPIN', role);
 
-    // リール回転開始
+    // リール回転開始（spinはまだ呼ばない。ストップ時に目押しタイミングで呼ぶ）
+    stopTimingsRef.current = [null, null, null];
     setReelSpinning([true, true, true]);
-    stopResultsRef.current = [null, null, null];
     setSpinResult(null);
     setNotificationPayload(null);
     setGamePhase('REEL_SPINNING');
@@ -149,18 +150,22 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
   // ── handleStop ──
   const handleStop = useCallback((reelIndex: number) => {
     const {
-      reelController, spinEngine, creditManager,
+      spinEngine, creditManager,
       gameModeManager, notificationManager, spinCounter,
-      thresholdTrigger, internalLottery,
+      thresholdTrigger, internalLottery, reelController,
     } = modules;
 
     const role = currentRoleRef.current;
     if (!role) return;
+    if (stopTimingsRef.current[reelIndex] !== null) return; // 既に停止済み
 
-    // 停止位置決定
-    const stopTiming = Math.floor(Math.random() * 21); // リールストリップ長21
+    // 目押しタイミング: 現在のリール位置をランダムにシミュレート
+    const strip = modules.reelController.getReelStrip(reelIndex);
+    const stopTiming = Math.floor(Math.random() * strip.length);
+    stopTimingsRef.current[reelIndex] = stopTiming;
+
+    // ReelControllerで引き込み・蹴飛ばしを適用して停止位置を決定
     const stopResult = reelController.determineStopPosition(reelIndex, role, stopTiming);
-    stopResultsRef.current[reelIndex] = stopResult;
 
     // リール回転状態を更新
     setReelSpinning(prev => {
@@ -169,7 +174,7 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
       return next;
     });
 
-    // 個別リール停止位置を更新
+    // 個別リール停止位置を更新（即座に表示に反映）
     setReelStopPositions(prev => {
       const next = [...prev];
       next[reelIndex] = stopResult.actualPosition;
@@ -177,14 +182,15 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     });
 
     // 全リール停止チェック
-    const allStopped = stopResultsRef.current.every(sr => sr !== null);
+    const allStopped = stopTimingsRef.current.every(t => t !== null);
     if (!allStopped) return;
 
-    // 全リール停止 → SpinResult生成
-    const stopTimings = stopResultsRef.current.map(sr => sr!.targetPosition);
+    // 全リール停止 → SpinEngine.spinで結果を生成
+    // stopTimingsを渡すことで、SpinEngine内部のReelControllerが引き込み・蹴飛ばしを適用
+    const timings = stopTimingsRef.current as number[];
     const activePaylines = PAYLINES_PER_BET[creditManager.currentBet] ?? [0, 1, 2, 3, 4];
 
-    const result = spinEngine.spin(role, stopTimings, {
+    const result = spinEngine.spin(role, timings, {
       activePaylineIndices: activePaylines,
     }) as SpinResult<NekosloSymbol>;
 
@@ -209,7 +215,6 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     if (role.type === 'BONUS' && result.isMiss) {
       internalLottery.setCarryOver(role);
     } else if (role.type === 'BONUS' && !result.isMiss) {
-      // ボーナス成立 → 持ち越しクリア
       internalLottery.clearCarryOver();
     }
 
@@ -217,24 +222,17 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     const prevMode = gameModeManager.currentMode;
 
     // ボーナス当選役にbonusTypeを付与してからevaluateTransitionに渡す
-    // GameModeManagerはwinningRole.bonusTypeを参照してボーナス遷移を判定する
-    const roleWithBonusType = { ...role };
+    const roleForTransition = { ...role };
     if (role.type === 'BONUS' && !result.isMiss) {
       if (role.id === 'super_big_bonus') {
-        roleWithBonusType.bonusType = 'SUPER_BIG_BONUS';
+        roleForTransition.bonusType = 'SUPER_BIG_BONUS';
       } else if (role.id === 'big_bonus') {
-        roleWithBonusType.bonusType = 'BIG_BONUS';
+        roleForTransition.bonusType = 'BIG_BONUS';
       } else if (role.id === 'reg_bonus') {
-        roleWithBonusType.bonusType = 'REG_BONUS';
+        roleForTransition.bonusType = 'REG_BONUS';
       }
     }
-    gameModeManager.evaluateTransition(result, roleWithBonusType);
-
-    // チャンスモード成立時の特殊処理（通常時のみ）
-    if (prevMode === 'Normal' && role.id === 'chance_mode' && !result.isMiss) {
-      // チャンスモード成立: 90枚付与はGameModeManagerが処理
-      // BT突入はevaluateTransitionで処理済み
-    }
+    gameModeManager.evaluateTransition(result, roleForTransition);
 
     // ボーナス成立時のスピンカウンターリセット
     if (role.type === 'BONUS' && !result.isMiss) {
@@ -249,23 +247,11 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     // 天井到達チェック
     const normalCount = spinCounter.get('normalSpins');
     if (thresholdTrigger.check('normalSpins', normalCount)) {
-      // 天井到達 → チャンスモード強制遷移
-      if (gameModeManager.currentMode === 'Normal') {
-        // 強制的にChanceモードへ遷移するため、ダミーのSpinResultで遷移を発火
-        // GameModeManagerのvalidateTransitionを通すため直接遷移
-        // Note: GameModeManagerはNormal→Chanceの遷移を許可している
-        // evaluateTransitionの内部でnormalToChance確率判定が行われるが、
-        // 天井到達時は強制遷移なので、直接transitionConfigを利用
-        // ここではevaluateTransitionを再度呼ぶのではなく、
-        // 次のスピンでチャンスモード成立を保証する仕組みとする
-        // 実装: thresholdTriggerのコールバックで処理済み
-      }
       spinCounter.reset('normalSpins');
     }
 
     // リプレイ判定
-    const replayFlag = result.isReplay;
-    setIsReplay(replayFlag);
+    setIsReplay(result.isReplay);
 
     // WAITINGフェーズへ
     setGamePhase('WAITING');
@@ -313,6 +299,7 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     reelStopPositions,
     isReplay,
     normalSpinCount,
+    totalGameCount,
     bonusAccumulatedPayout,
     notificationPayload,
     handleLeverOn,

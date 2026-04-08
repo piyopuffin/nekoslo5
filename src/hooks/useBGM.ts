@@ -32,6 +32,7 @@ export function useBGM(gameMode: GameMode): UseBGMReturn {
   useEffect(() => {
     const audio = new Audio();
     audio.loop = true;
+    audio.volume = 0.6;
     audioRef.current = audio;
 
     // ユーザーインタラクション検知でAutoPlay制限を解除

@@ -11,27 +11,29 @@ export const REEL_STRIPS: ReelConfig<NekosloSymbol>[] = [
   {
     symbols: SYMBOLS,
     reelStrip: [
-      'replay', 'cat5', 'falafel', 'petri', 'cat5', 'red7', 'replay', 'cat5',
-      'falafel', 'bar', 'cat5', 'petri', 'replay', 'cat5', 'blue7', 'falafel',
-      'cat5', 'petri', 'replay', 'cat5', 'bar',
+      'falafel','cat5','red7','replay','blue7','petri','cat5','falafel',
+      'replay','cat5','bar','cat5','falafel','replay','falafel','cat5',
+      'petri','falafel','replay','petri','replay'
     ],
   },
   // リール2（中）
   {
     symbols: SYMBOLS,
     reelStrip: [
-      'cat5', 'replay', 'petri', 'falafel', 'cat5', 'red7', 'replay', 'cat5',
-      'bar', 'petri', 'cat5', 'falafel', 'replay', 'cat5', 'blue7', 'petri',
-      'cat5', 'falafel', 'replay', 'cat5', 'red7',
+      'falafel','petri','cat5','replay','blue7','red7',
+      'petri','bar','replay','cat5','cat5','petri','falafel',
+      'replay','bar','cat5','replay','petri',
+      'falafel','replay','cat5'
     ],
   },
   // リール3（右）
   {
     symbols: SYMBOLS,
     reelStrip: [
-      'falafel', 'cat5', 'replay', 'petri', 'cat5', 'red7', 'bar', 'cat5',
-      'replay', 'falafel', 'cat5', 'petri', 'blue7', 'cat5', 'replay', 'bar',
-      'cat5', 'petri', 'falafel', 'cat5', 'replay',
+      'replay','blue7','falafel','cat5','red7','replay',
+      'bar','falafel','cat5','replay','falafel','cat5',
+      'replay','cat5','falafel','petri','cat5',
+      'replay','falafel','petri','cat5'
     ],
   },
 ];

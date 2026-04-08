@@ -42,7 +42,7 @@ export const PAY_TABLE: PayTable<PayTableSymbol> = {
     // BT中BAR揃い
     { pattern: ['bar', 'bar', 'bar'],           payout: 200, roleType: 'SMALL_WIN' },
     // 小役
-    { pattern: ['cat5', 'cat5', 'cat5'],        payout: 10,  roleType: 'SMALL_WIN' },
+    { pattern: ['cat5', 'cat5', 'cat5'],        payout: 8,  roleType: 'SMALL_WIN' },
     { pattern: ['falafel', 'falafel', 'falafel'], payout: 6, roleType: 'SMALL_WIN' },
     { pattern: ['ANY', 'ANY', 'petri'],         payout: 2,   roleType: 'SMALL_WIN' },
     // リプレイ

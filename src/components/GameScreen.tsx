@@ -47,14 +47,35 @@ export function GameScreen({ difficultyLevel }: GameScreenProps) {
     prevSpinResultRef.current = game.spinResult;
   }, [game.spinResult, sound]);
 
-  // ボーナス確定時にbonusConfirm音を再生
-  const prevNotificationRef = useRef(game.notificationPayload);
+  // ボーナス成立時にbonusConfirm音を再生
+  const prevGameModeRef = useRef(game.gameMode);
   useEffect(() => {
-    if (game.notificationPayload && game.notificationPayload !== prevNotificationRef.current) {
+    if (game.gameMode === 'Bonus' && prevGameModeRef.current !== 'Bonus') {
       sound.playSound('bonusConfirm');
     }
-    prevNotificationRef.current = game.notificationPayload;
-  }, [game.notificationPayload, sound]);
+    prevGameModeRef.current = game.gameMode;
+  }, [game.gameMode, sound]);
+  const lastRoleName = (() => {
+    const sr = game.spinResult;
+    if (!sr) return null;
+    // winLinesから実際に成立した小役名を取得（ボーナス中でも小役がわかる）
+    if (sr.winLines.length > 0) {
+      // 最も配当の高いwinLineの役名を表示
+      const topWin = sr.winLines.reduce((a, b) => a.payout > b.payout ? a : b);
+      const matched = topWin.matchedSymbols;
+      // 配当表の役名にマッピング
+      if (matched.every(s => s === 'cat5')) return 'cat5';
+      if (matched.every(s => s === 'falafel')) return 'ファラフェル';
+      if (matched[2] === 'petri') return 'ペトリ皿';
+      if (matched.every(s => s === 'replay')) return 'REPLAY';
+      if (matched.every(s => s === 'bar')) return 'BAR揃い';
+      if (matched.every(s => s === 'red7')) return 'SUPER BIG';
+      if (matched.every(s => s === 'blue7')) return 'BIG';
+      return topWin.matchedSymbols.join(' ');
+    }
+    if (sr.isReplay) return 'REPLAY';
+    return null;
+  })();
 
   return (
     <div className={styles.screen}>
@@ -87,10 +108,12 @@ export function GameScreen({ difficultyLevel }: GameScreenProps) {
           balance={game.creditState.balance}
           currentBet={game.creditState.currentBet}
           lastPayout={lastPayout}
+          lastRoleName={lastRoleName}
           gameMode={game.gameMode}
           bonusType={game.bonusType}
           bonusAccumulatedPayout={game.bonusAccumulatedPayout}
           normalSpinCount={game.normalSpinCount}
+          totalGameCount={game.totalGameCount}
           isReplay={game.isReplay}
         />
 
