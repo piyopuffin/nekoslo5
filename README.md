@@ -93,3 +93,14 @@
 | 左リール | 中リール | 右リール |
 |:---:|:---:|:---:|
 | ![左リール](docs/img/reel_left.png) | ![中リール](docs/img/reel_center.png) | ![右リール](docs/img/reel_right.png) |
+
+---
+# CREDIT
+## ArtWorks
+- cat5シンボル ... オリジナル: CAT5 氏イラストより
+- ファラフェル、ペトリ皿シンボル... Twemoji (by Copyright Twitter Inc. and other contributors. Licensed under CC-BY 4.0)
+- その他のシンボルイラスト ... Piyo Puffin
+
+## Sounds & Music
+- [魔王魂](https://maou.audio/)
+- [効果音ラボ](https://soundeffect-lab.info/sound/button/)
