@@ -19,7 +19,7 @@
     "@tsparticles/slim": "^3.9.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "reeljs": "file:../Reeljs"
+    "reeljs": "github:piyopuffin/Reeljs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

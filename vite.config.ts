@@ -4,6 +4,7 @@ import path from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: process.env.GITHUB_ACTIONS ? '/nekoslo5/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
