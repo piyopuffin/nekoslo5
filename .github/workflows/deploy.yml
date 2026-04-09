@@ -29,6 +29,8 @@ jobs:
         run: |
           git config --global url."https://${{ secrets.REELJS_TOKEN }}@github.com/".insteadOf "ssh://git@github.com/"
           git config --global url."https://${{ secrets.REELJS_TOKEN }}@github.com/".insteadOf "git@github.com:"
+          git config --global url."https://${{ secrets.REELJS_TOKEN }}@github.com/".insteadOf "git+ssh://git@github.com/"
+          sed -i 's|git+ssh://git@github.com/|https://${{ secrets.REELJS_TOKEN }}@github.com/|g' package-lock.json
 
       - run: npm ci
 
