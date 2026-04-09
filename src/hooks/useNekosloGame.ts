@@ -23,7 +23,7 @@ import type {
 import type { NekosloSymbol } from '../config/symbol-definitions';
 import { createNekosloConfig } from '../config/nekoslo-config';
 import { BONUS_MAX_SPINS, CHANCE_MAX_SPINS, BT_MAX_SPINS } from '../config/nekoslo-config';
-import { PAY_TABLE, PAYLINES, PAYLINES_PER_BET } from '../config/pay-table';
+import { PAYLINES_PER_BET } from '../config/pay-table';
 import { DIFFICULTY_PRESETS } from '../config/difficulty-presets';
 
 export interface UseNekosloGameReturn {
@@ -218,81 +218,34 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     const allStopped = stopTimingsRef.current.every(t => t !== null);
     if (!allStopped) return;
 
-    // 全リール停止 → 個別に決定した停止位置からgridとSpinResultを構築
-    // SpinEngine.spinは内部でcontrolReelsを再実行してしまうため、
-    // 個別停止結果と不整合が起きる。Payline評価のみSpinEngineに委譲する。
-    const timings = stopTimingsRef.current as number[];
+    // 全リール停止 → evaluateFromStopResultsでSpinResult構築
     const activePaylines = PAYLINES_PER_BET[creditManager.currentBet] ?? [0, 1, 2, 3, 4];
+    const stopResults = individualStopResultsRef.current.map((sr, i) => ({
+      reelIndex: i,
+      targetPosition: (stopTimingsRef.current as number[])[i],
+      actualPosition: sr.actualPosition,
+      slipCount: 0,
+      isMiss: sr.isMiss,
+    }));
 
-    // 個別停止位置からgridを構築
-    const reelStrips = [0, 1, 2].map(i => reelController.getReelStrip(i));
-    const grid: NekosloSymbol[][] = [];
-    for (let row = 0; row < 3; row++) {
-      const gridRow: NekosloSymbol[] = [];
-      for (let col = 0; col < 3; col++) {
-        const pos = individualStopResultsRef.current[col].actualPosition;
-        const strip = reelStrips[col];
-        gridRow.push(strip[(pos + row) % strip.length]);
-      }
-      grid.push(gridRow);
-    }
-
-    // SpinEngine.spinでPayline評価を取得（gridは使わないがtotalPayoutとwinLinesが必要）
-    const spinResult = spinEngine.spin(role, timings, {
+    const result = spinEngine.evaluateFromStopResults(stopResults, role, {
       activePaylineIndices: activePaylines,
     }) as SpinResult<NekosloSymbol>;
 
-    // 個別停止結果で上書き
-    const actualIsMiss = individualStopResultsRef.current.some(sr => sr.isMiss);
-    const result: SpinResult<NekosloSymbol> = {
-      ...spinResult,
-      grid,
-      isMiss: actualIsMiss,
-      stopResults: individualStopResultsRef.current.map((sr, i) => ({
-        reelIndex: i,
-        targetPosition: timings[i],
-        actualPosition: sr.actualPosition,
-        slipCount: 0,
-        isMiss: sr.isMiss,
-      })),
-    };
-
-    // 個別gridでPayline評価をやり直す（SpinEngineのgridと異なる可能性があるため）
-    // PAY_TABLEとPAYLINESをインポートして使用
-    result.winLines = [];
-    result.totalPayout = 0;
-    for (const pl of PAYLINES) {
-      if (!activePaylines.includes(pl.index)) continue;
-      const symbols = pl.positions.map((row, col) => grid[row]?.[col] ?? '');
-      // ペトリ皿チェック（ANY ANY petri）
-      if (symbols[2] === 'petri') {
-        const payout = pl.positions.every(p => p === 1) ? 1 : 2;
-        result.winLines.push({
-          lineIndex: pl.index,
-          matchedSymbols: symbols as NekosloSymbol[],
-          payout,
-          payline: pl,
-        });
-        result.totalPayout += payout;
-        continue;
+    // ペトリ皿の中段停止時1枚配当
+    let payoutAdjustment = 0;
+    const adjustedWinLines = result.winLines.map(wl => {
+      if (wl.matchedSymbols[2] === 'petri' && wl.payline.positions.every(p => p === 1)) {
+        const diff = wl.payout - 1;
+        payoutAdjustment -= diff;
+        return { ...wl, payout: 1 };
       }
-      for (const entry of PAY_TABLE.entries) {
-        const matched = entry.pattern.every((s, i) => s === symbols[i] || s === 'ANY');
-        if (matched) {
-          result.winLines.push({
-            lineIndex: pl.index,
-            matchedSymbols: symbols as NekosloSymbol[],
-            payout: entry.payout,
-            payline: pl,
-          });
-          result.totalPayout += entry.payout;
-          break;
-        }
-      }
+      return wl;
+    });
+    if (payoutAdjustment !== 0) {
+      result.winLines = adjustedWinLines;
+      result.totalPayout = Math.max(0, result.totalPayout + payoutAdjustment);
     }
-    result.isReplay = result.winLines.some(wl => 
-      wl.matchedSymbols.every(s => s === 'replay')
-    );
 
     // BTモード中のBAR揃いは200枚加算
     if (gameModeManager.currentMode === 'BT' && role.id === 'bar_hit' && !result.isMiss) {
@@ -323,17 +276,11 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     // モード遷移
     const prevMode = gameModeManager.currentMode;
 
-    // ボーナス当選役にbonusTypeを付与してからevaluateTransitionに渡す
-    const roleForTransition = { ...role, bonusType: undefined };
-    if (role.type === 'BONUS' && !result.isMiss) {
-      if (role.id === 'super_big_bonus') {
-        roleForTransition.bonusType = 'SUPER_BIG_BONUS' as const;
-      } else if (role.id === 'big_bonus') {
-        roleForTransition.bonusType = 'BIG_BONUS' as const;
-      } else if (role.id === 'reg_bonus') {
-        roleForTransition.bonusType = 'REG_BONUS' as const;
-      }
-    }
+    // ボーナス当選役のbonusTypeはInternalLotteryが自動解決済み
+    // 取りこぼし時はbonusTypeをundefinedにしてボーナス遷移を防ぐ
+    const roleForTransition = result.isMiss
+      ? { ...role, bonusType: undefined }
+      : role;
     gameModeManager.evaluateTransition(result, roleForTransition);
 
     // デバッグ: モード遷移ログ
@@ -354,28 +301,13 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
       spinCounter.increment('normalSpins');
     }
 
-    // 天井到達チェック → BT直接突入
+    // 天井到達チェック → forceTransitionでBT直接突入
     const normalCount = spinCounter.get('normalSpins');
     if (gameModeManager.currentMode === 'Normal' && thresholdTrigger.check('normalSpins', normalCount)) {
-      // 天井恩恵: BT確定。Chance経由で即BT突入
-      // Normal→Chanceに遷移
-      const chanceGrid = [['red7','red7','blue7'],['red7','red7','blue7'],['red7','red7','blue7']] as unknown as NekosloSymbol[][];
-      const chanceResult: SpinResult<NekosloSymbol> = {
-        grid: chanceGrid,
-        stopResults: result.stopResults,
-        winLines: [],
-        totalPayout: 0,
-        isReplay: false,
-        isMiss: false,
-        winningRole: { id: 'chance_mode', name: 'ﾍﾟﾆｭﾌﾟﾋﾟﾘｭﾘｭﾘｭﾐﾋﾟﾋﾟｭﾎﾟｨﾎﾟﾋﾟﾘｨ', type: 'BONUS', payout: 90, patterns: [], priority: 70 },
-      };
-      // Normal→Chance遷移（normalToChance確率を100%にするため直接evaluateTransition）
-      gameModeManager.evaluateTransition(chanceResult, chanceResult.winningRole);
-      // Chance→BT遷移（winPatternマッチで即BT突入）
-      gameModeManager.evaluateTransition(chanceResult, chanceResult.winningRole);
-      // 90枚付与
+      gameModeManager.forceTransition('BT');
       creditManager.payout(90);
       spinCounter.reset('normalSpins');
+      console.log('[CEILING] 天井到達! BT直接突入');
     }
 
     // リプレイ判定
