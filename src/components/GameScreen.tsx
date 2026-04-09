@@ -52,8 +52,9 @@ export function GameScreen({ difficultyLevel }: GameScreenProps) {
   const [bonusEndPayout, setBonusEndPayout] = useState<number | null>(null);
   const prevGameModeRef = useRef(game.gameMode);
   const prevBonusPayoutRef = useRef(game.bonusAccumulatedPayout);
+  const bonusEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // bonusAccumulatedPayoutの追跡（useEffect外で更新）
+  // bonusAccumulatedPayoutの追跡
   useEffect(() => {
     if (game.gameMode === 'Bonus' || game.gameMode === 'BT') {
       prevBonusPayoutRef.current = game.bonusAccumulatedPayout;
@@ -76,9 +77,13 @@ export function GameScreen({ difficultyLevel }: GameScreenProps) {
     if ((prev === 'Bonus' || prev === 'BT') && curr !== 'Bonus' && curr !== 'BT') {
       const payout = prevBonusPayoutRef.current;
       if (payout > 0) {
+        // 前のタイマーがあればクリア
+        if (bonusEndTimerRef.current) clearTimeout(bonusEndTimerRef.current);
         setBonusEndPayout(payout);
-        const timer = setTimeout(() => setBonusEndPayout(null), 5000);
-        return () => clearTimeout(timer);
+        bonusEndTimerRef.current = setTimeout(() => {
+          setBonusEndPayout(null);
+          bonusEndTimerRef.current = null;
+        }, 5000);
       }
     }
   }, [game.gameMode, sound]);
