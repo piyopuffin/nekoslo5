@@ -22,15 +22,15 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
-      - run: |
-          echo "//github.com/:_authToken=${{ secrets.REELJS_TOKEN }}" >> .npmrc
-          echo "@piyopuffin:registry=https://npm.pkg.github.com" >> .npmrc
-          npm ci
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.REELJS_TOKEN }}
+      - name: Configure git to use HTTPS with token
+        run: |
+          git config --global url."https://${{ secrets.REELJS_TOKEN }}@github.com/".insteadOf "ssh://git@github.com/"
+          git config --global url."https://${{ secrets.REELJS_TOKEN }}@github.com/".insteadOf "git@github.com:"
+
+      - run: npm ci
 
       - run: npm run build
 
