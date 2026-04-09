@@ -8,6 +8,7 @@ import { InfoPanel } from './InfoPanel';
 import { NotificationOverlay } from './NotificationOverlay';
 import { LoopAnimationRenderer } from './LoopAnimationRenderer';
 import { StageWindow } from './StageWindow';
+import { DebugPanel } from './DebugPanel';
 import styles from './GameScreen.module.css';
 
 export interface GameScreenProps {
@@ -184,6 +185,7 @@ export function GameScreen({ difficultyLevel }: GameScreenProps) {
           isReplay={game.isReplay}
         />
       </div>
+      {import.meta.env.DEV && <DebugPanel game={game} />}
     </div>
   );
 }

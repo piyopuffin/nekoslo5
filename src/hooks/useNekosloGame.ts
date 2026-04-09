@@ -49,6 +49,15 @@ export interface UseNekosloGameReturn {
   setBet: (amount: number) => void;
   setDifficulty: (level: number) => void;
   addCredit: () => void;
+  // デバッグ用（DEVのみ）
+  debug: {
+    forceNextRole: (roleId: string) => void;
+    forcedRoleId: string | null;
+    setSpinCount: (count: number) => void;
+    currentRoleId: string | null;
+    currentIsMiss: boolean;
+    hasCarryOver: boolean;
+  };
 }
 
 /**
@@ -87,6 +96,11 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
   const currentRoleRef = useRef<WinningRole | null>(null);
   const stopTimingsRef = useRef<(number | null)[]>([null, null, null]);
   const individualStopResultsRef = useRef<{ isMiss: boolean; actualPosition: number }[]>([]);
+  const forcedRoleIdRef = useRef<string | null>(null);
+  const [debugCurrentRoleId, setDebugCurrentRoleId] = useState<string | null>(null);
+  const [debugIsMiss, setDebugIsMiss] = useState(false);
+  const [debugHasCarryOver, setDebugHasCarryOver] = useState(false);
+  const [debugForcedRoleId, setDebugForcedRoleId] = useState<string | null>(null);
 
   // ── syncState: モジュール状態をReact状態に同期 ──
   const syncState = useCallback(() => {
@@ -131,11 +145,21 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     setGamePhase('LEVER_ON');
     setTotalGameCount(prev => prev + 1);
 
-    // 内部抽選
-    const role = internalLottery.draw(
-      gameModeManager.currentMode,
-      difficultyPreset.currentLevel,
-    );
+    // 内部抽選（強制当選がセットされていればそちらを使用）
+    let role: WinningRole;
+    if (forcedRoleIdRef.current) {
+      const config = createNekosloConfig(difficultyPreset.currentLevel);
+      const forced = config.winningRoleDefinitions.find(d => d.id === forcedRoleIdRef.current);
+      if (forced) {
+        role = { ...forced, bonusType: undefined };
+      } else {
+        role = internalLottery.draw(gameModeManager.currentMode, difficultyPreset.currentLevel);
+      }
+      forcedRoleIdRef.current = null;
+      setDebugForcedRoleId(null);
+    } else {
+      role = internalLottery.draw(gameModeManager.currentMode, difficultyPreset.currentLevel);
+    }
     currentRoleRef.current = role;
 
     // 告知チェック（PRE_SPIN）
@@ -277,6 +301,9 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
 
     setSpinResult(result);
     setGamePhase('RESULT_CONFIRMED');
+    setDebugCurrentRoleId(role.id);
+    setDebugIsMiss(result.isMiss);
+    setDebugHasCarryOver(modules.internalLottery.getCarryOverFlag() != null);
 
     // 配当処理
     if (result.totalPayout > 0) {
@@ -297,17 +324,25 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     const prevMode = gameModeManager.currentMode;
 
     // ボーナス当選役にbonusTypeを付与してからevaluateTransitionに渡す
-    const roleForTransition = { ...role };
+    const roleForTransition = { ...role, bonusType: undefined };
     if (role.type === 'BONUS' && !result.isMiss) {
       if (role.id === 'super_big_bonus') {
-        roleForTransition.bonusType = 'SUPER_BIG_BONUS';
+        roleForTransition.bonusType = 'SUPER_BIG_BONUS' as const;
       } else if (role.id === 'big_bonus') {
-        roleForTransition.bonusType = 'BIG_BONUS';
+        roleForTransition.bonusType = 'BIG_BONUS' as const;
       } else if (role.id === 'reg_bonus') {
-        roleForTransition.bonusType = 'REG_BONUS';
+        roleForTransition.bonusType = 'REG_BONUS' as const;
       }
     }
     gameModeManager.evaluateTransition(result, roleForTransition);
+
+    // デバッグ: モード遷移ログ
+    if (gameModeManager.currentMode !== prevMode) {
+      console.log('[MODE TRANSITION]', prevMode, '→', gameModeManager.currentMode,
+        '| role:', role.id, '| isMiss:', result.isMiss,
+        '| bonusType:', roleForTransition.bonusType ?? 'none',
+        '| grid:', result.grid.map(r => r.join(',')).join(' | '));
+    }
 
     // ボーナス成立時のスピンカウンターリセット
     if (role.type === 'BONUS' && !result.isMiss) {
@@ -389,6 +424,19 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     syncState();
   }, [modules, syncState]);
 
+  const forceNextRole = useCallback((roleId: string) => {
+    forcedRoleIdRef.current = roleId;
+    setDebugForcedRoleId(roleId);
+  }, []);
+
+  const setSpinCount = useCallback((count: number) => {
+    modules.spinCounter.reset('normalSpins');
+    for (let i = 0; i < count; i++) {
+      modules.spinCounter.increment('normalSpins');
+    }
+    syncState();
+  }, [modules, syncState]);
+
   return {
     gamePhase,
     gameMode,
@@ -410,6 +458,14 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     setBet: setBetAction,
     setDifficulty: setDifficultyAction,
     addCredit,
+    debug: {
+      forceNextRole,
+      forcedRoleId: debugForcedRoleId,
+      setSpinCount,
+      currentRoleId: debugCurrentRoleId,
+      currentIsMiss: debugIsMiss,
+      hasCarryOver: debugHasCarryOver,
+    },
   };
 }
 

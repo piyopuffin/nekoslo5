@@ -1,0 +1,98 @@
+.container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+}
+
+.toggle {
+  position: absolute;
+  bottom: 100%;
+  right: 8px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  border: 1px solid #555;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: #1a1a2e;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.panel {
+  background: #1a1a2e;
+  border-top: 1px solid #555;
+  padding: 12px;
+  max-height: 50vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sectionTitle {
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.buttonGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.forceButton {
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: transparent;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.forceButton:hover {
+  border-color: #ff9800;
+  color: #ff9800;
+}
+
+.forceButtonActive {
+  border-color: #ff9800;
+  background: rgba(255, 152, 0, 0.2);
+  color: #ff9800;
+}
+
+.actionButton {
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: transparent;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.actionButton:hover {
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.stateRow {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.forced {
+  font-size: 0.75rem;
+  color: #ff9800;
+  margin-top: 2px;
+}
