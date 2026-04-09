@@ -25,16 +25,6 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Configure git to use HTTPS with token
-        run: |
-          git config --global url."https://x-access-token:${{ secrets.REELJS_TOKEN }}@github.com/".insteadOf "ssh://git@github.com/"
-          git config --global url."https://x-access-token:${{ secrets.REELJS_TOKEN }}@github.com/".insteadOf "git@github.com:"
-          git config --global url."https://x-access-token:${{ secrets.REELJS_TOKEN }}@github.com/".insteadOf "git+ssh://git@github.com/"
-          sed -i 's|git+ssh://git@github.com/|https://x-access-token:${{ secrets.REELJS_TOKEN }}@github.com/|g' package-lock.json
-
-      - name: Verify git access
-        run: git ls-remote https://x-access-token:${{ secrets.REELJS_TOKEN }}@github.com/piyopuffin/Reeljs.git HEAD
-
       - run: npm ci
 
       - run: npm run build
