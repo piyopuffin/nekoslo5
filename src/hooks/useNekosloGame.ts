@@ -125,7 +125,7 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
       setBonusMaxSpins(null);
     }
     setGamePhase(modules.gameCycleManager.currentPhase);
-    setIsReplay(modules.gameCycleManager.isReplay);
+    // isReplayはhandleStop内で直接管理するためsyncStateでは上書きしない
   }, [modules]);
 
   // ── handleLeverOn ──
@@ -136,11 +136,13 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
       difficultyPreset,
     } = modules;
 
-    // リプレイ時はBETスキップ
-    if (!modules.gameCycleManager.isReplay) {
+    // リプレイ時はBETスキップ（isReplayはReact stateで管理）
+    if (!isReplay) {
       const betOk = creditManager.bet();
       if (!betOk) return;
     }
+    // リプレイフラグをリセット
+    setIsReplay(false);
 
     setGamePhase('LEVER_ON');
     setTotalGameCount(prev => prev + 1);
@@ -174,9 +176,7 @@ export function useNekosloGame(initialDifficulty: number = 3): UseNekosloGameRet
     setGamePhase('REEL_SPINNING');
 
     syncState();
-  }, [modules, syncState]);
-
-  // ── handleStop ──
+  }, [modules, syncState, isReplay]);
   const handleStop = useCallback((reelIndex: number) => {
     const {
       spinEngine, creditManager,
