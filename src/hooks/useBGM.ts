@@ -3,10 +3,10 @@ import type { GameMode } from 'reeljs';
 
 /** ゲームモードごとのBGMトラックマッピング */
 export const BGM_TRACK_MAP: Record<GameMode, string> = {
-  Normal: '/bgm/normal.mp3',
-  Chance: '/bgm/chance.mp3',
-  Bonus: '/bgm/bonus.mp3',
-  BT: '/bgm/bt.mp3',
+  Normal: `${import.meta.env.BASE_URL}bgm/normal.mp3`,
+  Chance: `${import.meta.env.BASE_URL}bgm/chance.mp3`,
+  Bonus: `${import.meta.env.BASE_URL}bgm/bonus.mp3`,
+  BT: `${import.meta.env.BASE_URL}bgm/bt.mp3`,
 };
 
 export interface UseBGMReturn {

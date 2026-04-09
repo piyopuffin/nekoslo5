@@ -3,10 +3,10 @@ import { useState, useCallback } from 'react';
 export type SoundEvent = 'lever' | 'stop' | 'payout' | 'bonusConfirm';
 
 export const SOUND_MAP: Record<SoundEvent, string> = {
-  lever: '/sounds/lever.mp3',
-  stop: '/sounds/stop.mp3',
-  payout: '/sounds/payout.mp3',
-  bonusConfirm: '/sounds/bonus-confirm.mp3',
+  lever: `${import.meta.env.BASE_URL}sounds/lever.mp3`,
+  stop: `${import.meta.env.BASE_URL}sounds/stop.mp3`,
+  payout: `${import.meta.env.BASE_URL}sounds/payout.mp3`,
+  bonusConfirm: `${import.meta.env.BASE_URL}sounds/bonus-confirm.mp3`,
 };
 
 export interface UseSoundEffectsReturn {

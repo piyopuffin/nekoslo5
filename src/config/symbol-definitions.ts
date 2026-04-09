@@ -40,14 +40,14 @@ export const SYMBOL_DISPLAY: Record<NekosloSymbol, string> = {
 
 /**
  * 各シンボルの画像パスマッピング（public/symbols/ に配置）
- * 画像がないシンボルは null
+ * BASE_URLを考慮してパスを構築
  */
-export const SYMBOL_IMAGE: Record<NekosloSymbol, string | null> = {
-  red7:    '/symbols/red7.png',
-  blue7:   '/symbols/blue7.png',
-  bar:     '/symbols/bar.png',
-  cat5:    '/symbols/cat5.png',
-  falafel: '/symbols/falafel.png',
-  petri:   '/symbols/petri.png',
-  replay:  '/symbols/replay.png',
+export const SYMBOL_IMAGE: Record<NekosloSymbol, string> = {
+  red7:    `${import.meta.env.BASE_URL}symbols/red7.png`,
+  blue7:   `${import.meta.env.BASE_URL}symbols/blue7.png`,
+  bar:     `${import.meta.env.BASE_URL}symbols/bar.png`,
+  cat5:    `${import.meta.env.BASE_URL}symbols/cat5.png`,
+  falafel: `${import.meta.env.BASE_URL}symbols/falafel.png`,
+  petri:   `${import.meta.env.BASE_URL}symbols/petri.png`,
+  replay:  `${import.meta.env.BASE_URL}symbols/replay.png`,
 };
